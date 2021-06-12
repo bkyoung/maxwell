@@ -24,6 +24,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/bkyoung/maxwell/internal/systemd"
+	"github.com/spf13/viper"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -35,11 +36,12 @@ var uninstallServiceCmd = &cobra.Command{
 	Short: fmt.Sprintf("Uninstall %s as a systemd unit", executableName),
 	Long: fmt.Sprintf("Uninstall %s as a systemd unit", executableName),
 	Run: func(cmd *cobra.Command, args []string) {
+		purge := viper.GetBool("purge")
 		unitPath := fmt.Sprintf("/etc/systemd/system/%s.service", executableName)
 		agent := systemd.New(executableName,
 			systemd.WithUnitPath(unitPath),
 		)
-		err := systemd.Uninstall(agent);if err != nil {
+		err := systemd.Uninstall(agent, purge);if err != nil {
 			fmt.Printf("Failed to uninstall systemd unit: %s\n", err)
 			os.Exit(1)
 		}
@@ -49,4 +51,5 @@ var uninstallServiceCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(uninstallServiceCmd)
+	uninstallServiceCmd.Flags().Bool("purge", false, "Remove config file and directory during uninstall (default is false)")
 }

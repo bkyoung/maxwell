@@ -5,6 +5,7 @@ import (
     "bytes"
     "fmt"
     "os"
+    "path/filepath"
     "strings"
 )
 
@@ -15,6 +16,8 @@ type unit struct {
     content        []byte
     disabled       bool
     executablePath string
+    configPath     string
+    configContent  []byte
 }
 
 // opt is a functional configuration option for configuring a systemd unit
@@ -37,6 +40,20 @@ func New(name string, opts ...opt) *unit {
 func (u *unit) Configure(opts ...opt) {
     for _, o := range opts {
         o(u)
+    }
+}
+
+// WithConfigContent allows for setting the location of the service's config file
+func WithConfigContent(content []byte) opt {
+    return func(u *unit) {
+        u.configContent = content
+    }
+}
+
+// WithConfigPath allows for setting the location of the service's config file
+func WithConfigPath(path string) opt {
+    return func(u *unit) {
+        u.configPath = path
     }
 }
 
@@ -85,7 +102,7 @@ func Install(u *unit) error {
 }
 
 // Uninstall removes the installed systemd unit from disk
-func Uninstall(u *unit) error {
+func Uninstall(u *unit, purge bool) error {
     if checkExists(u.unitPath) {
         deleted, err := deleteFile(u.unitPath)
         if err != nil {
@@ -98,6 +115,13 @@ func Uninstall(u *unit) error {
             }
         } else {
             return fmt.Errorf("%s was not deleted", u.unitPath)
+        }
+    }
+    if purge {
+        if checkExists(u.configPath) {
+            _, err := deleteDir(u.configPath);if err != nil {
+                return fmt.Errorf("Error deleting config dir: %w\n", err)
+            }
         }
     }
     return nil
@@ -120,12 +144,25 @@ func checkMatches(a, b []byte) bool {
     return false
 }
 
+// deleteDir deletes the directory located at the specified path on disk
+// returns true if the directory existed and is successfully deleted
+func deleteDir(path string) (bool, error) {
+    if checkExists(path) {
+        d := filepath.Dir(path)
+        err := os.Remove(d);if err != nil {
+            return false, fmt.Errorf("Error deleting directory: %w\n", err)
+        }
+        return true, nil
+    }
+    return false, nil
+}
+
 // deleteFile deletes the file located at the specified path on disk
 // returns true if unit file existed and is successfully deleted
 func deleteFile(path string) (bool, error) {
     if checkExists(path) {
         err := os.Remove(path);if err != nil {
-            return false, fmt.Errorf("Error deleting unit fie: %w\n", err)
+            return false, fmt.Errorf("Error deleting file: %w\n", err)
         }
         return true, nil
     }

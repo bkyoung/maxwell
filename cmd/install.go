@@ -53,9 +53,11 @@ var installServiceCmd = &cobra.Command{
 			}
 		}
 		data := struct{
+			Config 		string
 			Executable  string
 			Path		string
 		}{
+			Config: cfgFile,
 			Executable: executableName,
 			Path: executablePath,
 		}
@@ -70,16 +72,25 @@ var installServiceCmd = &cobra.Command{
 		}
 
 		agent := systemd.New(executableName,
+			systemd.WithConfigPath(cfgFile),
 			systemd.WithUnitPath(unitPath),
 			systemd.WithUnitContent(unitContent.Bytes()),
 			systemd.WithUnitDisabled(viper.GetBool("disable")),
 			systemd.WithExecutablePath(executablePath),
 		)
 
+		if viper.GetBool("write-config") {
+			err = viper.WriteConfig();if err != nil {
+				fmt.Printf("Failed to write config file: %s\n", err)
+				os.Exit(1)
+			}
+		}
+
 		err = systemd.Install(agent);if err != nil {
 			fmt.Printf("Failed to install systemd unit: %s\n", err)
 			os.Exit(1)
 		}
+
 		fmt.Printf("Successfully installed %s.service\n", executableName)
 	},
 }
@@ -88,4 +99,5 @@ func init() {
 	rootCmd.AddCommand(installServiceCmd)
 	installServiceCmd.Flags().Bool("disable", false, "Disable systemd unit after installing")
 	installServiceCmd.Flags().String("executable-path", "", "Path to ExecStart (default is current path of binary)")
+	installServiceCmd.Flags().Bool("write-config", false, "Write configuration file to disk (default is false)")
 }

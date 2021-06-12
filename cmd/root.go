@@ -82,7 +82,7 @@ func initConfig() {
 	} else {
 		viper.AddConfigPath(path.Dir(defaultCfgFile))
 		viper.SetConfigName(strings.Split(path.Base(defaultCfgFile), ".")[0])
-		viper.SetConfigType(path.Ext(path.Base(defaultCfgFile)))
+		viper.SetConfigType(strings.Trim(path.Ext(path.Base(defaultCfgFile)), "."))
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
