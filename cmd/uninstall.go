@@ -23,35 +23,30 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/bkyoung/maxwell/internal/systemd"
+	"os"
 
 	"github.com/spf13/cobra"
 )
 
 // uninstallServiceCmd represents the uninstallService command
 var uninstallServiceCmd = &cobra.Command{
-	Use:   "uninstall-service",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "uninstall",
+	Short: fmt.Sprintf("Uninstall %s as a systemd unit", executableName),
+	Long: fmt.Sprintf("Uninstall %s as a systemd unit", executableName),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("uninstall-service called")
+		unitPath := fmt.Sprintf("/etc/systemd/system/%s.service", executableName)
+		agent := systemd.New(executableName,
+			systemd.WithUnitPath(unitPath),
+		)
+		err := systemd.Uninstall(agent);if err != nil {
+			fmt.Printf("Failed to uninstall systemd unit: %s\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Successfully uninstalled %s.service\n", executableName)
 	},
 }
 
 func init() {
-	//rootCmd.AddCommand(uninstallServiceCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// uninstallServiceCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// uninstallServiceCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.AddCommand(uninstallServiceCmd)
 }

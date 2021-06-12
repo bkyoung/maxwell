@@ -1,9 +1,11 @@
 package systemd
 
 import (
+    "bufio"
     "bytes"
     "fmt"
     "os"
+    "strings"
 )
 
 // unit represents a systemd unit file
@@ -85,7 +87,18 @@ func Install(u *unit) error {
 // Uninstall removes the installed systemd unit from disk
 func Uninstall(u *unit) error {
     if checkExists(u.unitPath) {
-        return os.Remove(u.unitPath)
+        deleted, err := deleteFile(u.unitPath)
+        if err != nil {
+            return fmt.Errorf("Error deleting unit file: %w\n", err)
+        }
+        if deleted {
+            out, err := daemonReload()
+            if err != nil {
+                return fmt.Errorf("Error performing 'systemctl daemon-reload': \n%s\n%w\n", string(out), err)
+            }
+        } else {
+            return fmt.Errorf("%s was not deleted", u.unitPath)
+        }
     }
     return nil
 }
@@ -122,6 +135,21 @@ func deleteFile(path string) (bool, error) {
 // readFile returns the content of the specified file located at path
 func readFile(path string) ([]byte, error) {
     return os.ReadFile(path)
+}
+
+// execPathFromUnit extracts the executable's filesystem path from an existing service unit
+func execPathFromUnit(u []byte) (string, error) {
+    var execPath string
+    b := bytes.NewBuffer(u)
+    scanner := bufio.NewScanner(b)
+    scanner.Split(bufio.ScanLines)
+    for scanner.Scan() {
+        line := scanner.Text()
+        if strings.HasPrefix(line, "ExecStart") {
+            execPath = strings.Split(line, "=")[1]
+        }
+    }
+    return execPath, nil
 }
 
 // writeFile writes the supplied content to the specified path on disk

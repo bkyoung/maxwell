@@ -59,9 +59,10 @@ var installServiceCmd = &cobra.Command{
 			Executable: executableName,
 			Path: executablePath,
 		}
-		unitContent := &bytes.Buffer{}
+
 		unitPath := fmt.Sprintf("/etc/systemd/system/%s.service", executableName)
 
+		unitContent := &bytes.Buffer{}
 		t := template.Must(template.New("unit-tmpl").Parse(string(unit)))
 		err = t.Execute(unitContent, data); if err != nil {
 			fmt.Printf("Error rendering systemd unit file: %s\n", err)
@@ -79,6 +80,7 @@ var installServiceCmd = &cobra.Command{
 			fmt.Printf("Failed to install systemd unit: %s\n", err)
 			os.Exit(1)
 		}
+		fmt.Printf("Successfully installed %s.service\n", executableName)
 	},
 }
 
@@ -86,5 +88,4 @@ func init() {
 	rootCmd.AddCommand(installServiceCmd)
 	installServiceCmd.Flags().Bool("disable", false, "Disable systemd unit after installing")
 	installServiceCmd.Flags().String("executable-path", "", "Path to ExecStart (default is current path of binary)")
-	installServiceCmd.Flags().String("unit-path", "", "Path to install service unit (default is /etc/systemd/system)")
 }
