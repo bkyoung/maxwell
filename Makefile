@@ -1,17 +1,17 @@
 SHELL := /bin/bash
 
-export MODULE = `go list`
-export GOVER ?= $(go version | awk '{print $3}' | sed -E 's/go([[:digit:]]\.[[:digit:]]{2}).*/\1/')
-export BUILD ?= "0"
-export COMMIT ?= `git rev-parse --short HEAD`
-export DATE ?= `date +%s`
-export VERSION ?= "dev"
-export EXECUTABLE_NAME ?= `basename $(MODULE)`
+export MODULE := github.com/bkyoung/maxwell
+GOVER ?= $(go version | awk '{print $3}' | sed -E 's/go([[:digit:]]\.[[:digit:]]{2}).*/\1/')
+BUILD ?= "0"
+COMMIT ?= `git rev-parse --short HEAD`
+DATE ?= `date +%s`
+VERSION ?= dev
+EXECUTABLE_NAME ?= `basename $${MODULE}`
 
-all: clean darwin
+all: clean linux
 
 clean:
-	rm -f $(EXECUTABLE_NAME)
+	rm -f ./$(EXECUTABLE_NAME)
 
 darwin:
 	env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 \
